@@ -31,9 +31,15 @@ In order to compile this library and the example program successfully, the follo
 - PSRAM: OPI PSRAM
 - Partition Scheme: Huge App
 
-# Example Program
+# Example Programs
 
-The [example program](https://github.com/placidanomaly/Crowpanel_2.1/blob/main/examples/crowpanel_2_1_demo/crowpanel_2_1_demo.ino) displays a curved slider to control the brightness of the LCD display of the Crowpanel 2.1".
+## very_simple
+
+This is a minimalist program that can be used as a skeleton to use the library in a project. Just open the very_simple.ino file in Arduino IDE, ensure that the settings in the previous section have been selected, and hit Upload. The program displays a text label in the center of the display and outputs a message on the serial port whenever the rotary encoder is clicked (use the Serial Monitor tool in Arduino IDE to see the message).
+
+## crowpanel_2_1_demo
+
+This is a more substantial example that exercises almost all of the capabilities of the library. The [example program](https://github.com/placidanomaly/Crowpanel_2.1/blob/main/examples/crowpanel_2_1_demo/crowpanel_2_1_demo.ino) displays a curved slider to control the brightness of the LCD display of the Crowpanel 2.1".
 
 A desired target brightness is set by clicking on the slider. The target brightness marker
 will move to the selected target value and the brightness of the LCD will gradually change to match the target value. The actual brightness of the display is indicated by a solid circle while the target marker is indicated by a hollow circle.
