@@ -20,6 +20,30 @@ The following capabilities are provided:
 
 There are no special helper functions needed to access the UART or I2C pins on the back of the device, this can be done with the standard Arduino libraries.
 
+# Arduino IDE settings
+
+In order to compile this library and the example program successfully, the following settings must be applied in the Arduino IDE:
+
+- Board type: ESP32S3 Dev Module (add this library if needed: https://espressif.github.io/arduino-esp32/package_esp32_index.json )
+
+- USB CDC On Boot: Enabled
+- Flash size: 16MB
+- PSRAM: OPI PSRAM
+- Partition Scheme: Huge App
+
+# Example Program
+
+The [example program](https://github.com/placidanomaly/Crowpanel_2.1/blob/main/examples/crowpanel_2_1_demo/crowpanel_2_1_demo.ino) displays a curved slider to control the brightness of the LCD display of the Crowpanel 2.1".
+
+A desired target brightness is set by clicking on the slider. The target brightness marker
+will move to the selected target value and the brightness of the LCD will gradually change to match the target value. The actual brightness of the display is indicated by a solid circle while the target marker is indicated by a hollow circle.
+
+The target marker can also be dragged with normal touchscreen drag gestures, demonstrating the use of LVGL input device callbacks to process touchscreen signals.
+
+The target brightness can also be changed by rotating the encoder. A clockwise rotation increases brightness while a counterclockwise will decrease it. This demonstrates the use of the rotary encoder.
+
+The brightness can be reset to its initial value by holding the encoder down for 1 second or more, demonstrating one of the 3 possible click callbacks from the encoder.
+
 # Future Improvements
 
 It is unclear whether this library would work with other Crowpanel models. It would be good to have a single library offering support for all devices.
