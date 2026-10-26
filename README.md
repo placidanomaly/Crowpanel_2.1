@@ -18,7 +18,7 @@ The following capabilities are provided:
 - Touchscreen event handling through the LVGL input device framework
 - Rotary control event handling including clicks, double-clicks, long presses, and rotation
 
-There are no special helper functions needed to access the UART or I2C pins on the back of the device, this can be done with the standard Arduino libraries.
+There are no special helper functions needed to access the UART or I2C pins on the back of the device, this can be done with the standard Arduino or ESP libraries.
 
 # Arduino IDE settings
 
