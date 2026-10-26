@@ -35,7 +35,7 @@ In order to compile this library and the example program successfully, the follo
 
 ## very_simple
 
-This is a minimalist program that can be used as a skeleton to use the library in a project. Just open the very_simple.ino file in Arduino IDE, ensure that the settings in the previous section have been selected, and hit Upload. The program displays a text label in the center of the display and outputs a message on the serial port whenever the rotary encoder is clicked (use the Serial Monitor tool in Arduino IDE to see the message).
+This is a minimalistic program that can be used as a skeleton to use the library in a project. Just open the [very_simple.ino](https://github.com/placidanomaly/Crowpanel_2.1/blob/main/examples/very_simple/very_simple.ino) file in Arduino IDE, ensure that the settings in the previous section have been selected, and hit the Upload button. The program displays a text label in the center of the display and outputs a message on the serial port whenever the rotary encoder is clicked (use the Serial Monitor tool in Arduino IDE to see the message).
 
 ## crowpanel_2_1_demo
 
@@ -44,7 +44,7 @@ This is a more substantial example that exercises almost all of the capabilities
 A desired target brightness is set by clicking on the slider. The target brightness marker
 will move to the selected target value and the brightness of the LCD will gradually change to match the target value. The actual brightness of the display is indicated by a solid circle while the target marker is indicated by a hollow circle.
 
-The target marker can also be dragged with normal touchscreen drag gestures, demonstrating the use of LVGL input device callbacks to process touchscreen signals.
+The target marker can also be dragged with normal touchscreen drag gestures, demonstrating the use of LVGL object dragging capabilities and input device callbacks to process touchscreen signals.
 
 The target brightness can also be changed by rotating the encoder. A clockwise rotation increases brightness while a counterclockwise will decrease it. This demonstrates the use of the rotary encoder.
 
