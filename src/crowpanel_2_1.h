@@ -83,7 +83,7 @@ public:
      * 
      * Note: the display starts powered ON, is reset, and set to maximum brightness
      * when initialized.
-     * @return A reference to the global Crowpanel object
+     * @return A pointer to a Crowpanel object
      */   
     static Crowpanel& getInstance();    
 
@@ -213,7 +213,7 @@ public:
      */
     void registerDoubleClickActionCallback(void (*doubleClickActionCB)());
     
-        /**
+    /**
      * @brief This enum contains the various signals that the encoder can pass
      * to its callback functions.
      */
@@ -244,7 +244,7 @@ public:
      * to an EncoderAction object as parameter
      */
     void registerRawEncoderActionCallback(void (*encoderActionCB)(EncoderAction&));
-
+    
     /**
      * @brief Specified a callback function to be invoked when the rotary encoder
      * is moved.
@@ -253,9 +253,15 @@ public:
      * The value passed is 1 if the encoder was moved clockwise and -1 if moved
      * counter-clockwise.
      * @param [in] encoderActionCB A pointer to the callback function which must take
-     * an int as parameter
+     * an int as parameter (the parameter signals the amplitude and direction of the
+     * rotation)
+     * @param [in] accelerated A boolean value that specifies whether the amplitude of
+     * the rotation should be modulated according to the speed at which the rotation
+     * is made. When set to false, the rotation passed to the callback is either +1 or -1.
+     * When set to TRUE, the rotation value will be 3 if the call is within 30ms of
+     * the last one, 2 if within 200ms, and 1 if over 600ms.
      */
-    void registerEncoderRotationActionCallback(void (*encoderActionCB)(int));
+    void registerEncoderRotationActionCallback(void (*encoderActionCB)(int), bool accelerated = false);
 
     /**
      * @brief Returns a pointer to the GFX object of the LCD display.
@@ -350,6 +356,8 @@ private:
     void (*performDoubleClickAction)() = NULL;
     void (*performEncoderRotationAction)(int) = NULL;    
     void (*handleRawEncoderAction)(EncoderAction&) = NULL;
+
+    bool acceleratedRotation = false;
 };
 
 #endif // CROWPANEL_2_1_H

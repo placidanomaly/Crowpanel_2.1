@@ -231,10 +231,10 @@ void Crowpanel::touch_hardware_task(void *pvParameters) {
           panel->shared_is_pressed.store(true, std::memory_order_relaxed);
 
     #ifdef DEBUG
-          debugOutputStream->print("[TOUCH] x=");
-          debugOutputStream->print(stableX);
-          debugOutputStream->print(" y=");
-          debugOutputStream->println(stableY);
+          panel->debugOutputStream->print("[TOUCH] x=");
+          panel->debugOutputStream->print(stableX);
+          panel->debugOutputStream->print(" y=");
+          panel->debugOutputStream->println(stableY);
     #endif
         }
         else
@@ -322,12 +322,12 @@ void Crowpanel::registerRawEncoderActionCallback(void (*encoderActionCB)(Encoder
     handleRawEncoderAction = encoderActionCB;
 }
 
-void Crowpanel::registerEncoderRotationActionCallback(void (*encoderActionCB)(int)) {
+void Crowpanel::registerEncoderRotationActionCallback(void (*encoderActionCB)(int), bool accelerated) {
     performEncoderRotationAction = encoderActionCB;
+    this->acceleratedRotation = accelerated;
 }
 
-void Crowpanel::handleEncoderAction(EncoderAction &action) {
-
+void Crowpanel::handleEncoderAction(EncoderAction &action) {  
   if(handleRawEncoderAction != NULL)
     handleRawEncoderAction(action);
 
@@ -367,7 +367,20 @@ void Crowpanel::handleEncoderAction(EncoderAction &action) {
     debugOutputStream->println("[ENC] Rotation");
 #endif
 
-  if(performEncoderRotationAction != NULL) performEncoderRotationAction(delta);
+  static unsigned long lastRotation = 0;
+  if(performEncoderRotationAction != NULL) {
+    const unsigned long now = millis();
+    int accelerationFactor = 1;    
+    
+    if(now - lastRotation < 600) accelerationFactor = 2;
+    if(now - lastRotation < 300) accelerationFactor = 3;
+
+#ifdef DEBUG
+    Serial.printf("[ENC] Rotation action %d (%d ms since last rotation)\n", delta * accelerationFactor, now - lastRotation);
+#endif
+    lastRotation = now;
+    performEncoderRotationAction(delta * accelerationFactor);
+  }
 }
 
 /**
@@ -516,7 +529,7 @@ void Crowpanel::loop() {
     Crowpanel::EncoderAction action;
     while(encoderActionQueue && xQueueReceive(encoderActionQueue, &action, 0) == pdTRUE) {
 #ifdef DEBUG
-  debugOutputStream->printf("[ENC] Action dequeued: type=%d, rotationSequence=%u\n", action.type, action.rotationSequence);
+        debugOutputStream->printf("[ENC] Action dequeued: type=%d, rotationSequence=%u\n", action.type, action.rotationSequence);
 #endif
         handleEncoderAction(action);
     }
