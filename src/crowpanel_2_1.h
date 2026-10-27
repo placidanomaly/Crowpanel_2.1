@@ -29,9 +29,6 @@ SOFTWARE.
 #ifndef CROWPANEL_2_1_H
 #define CROWPANEL_2_1_H
 
-
-//#define DEBUG // Uncomment this line to get verbose debug messages on the output stream
-
 #include <Arduino.h>
 #include <esp_system.h>
 #include <Adafruit_CST8XX.h>
@@ -39,6 +36,7 @@ SOFTWARE.
 #include <Arduino_GFX_Library.h>
 #include <lvgl.h>
 #include <atomic>
+#include "debughelper.h"
 
 // Hardware pin assignments. These are fixed on the Crowpanel.
 #define I2C_SDA_PIN 38
@@ -92,7 +90,7 @@ public:
      * 
      * Must be called before using the panel in the setup() function.
      */
-    void begin(Stream *stream = NULL);
+    void begin();
 
     /**
      * @brief The event loop for the Crowpanel
@@ -278,8 +276,7 @@ private:
      * they would interfere with each other and result in unpredictable behavior.
      */
     Crowpanel();    
-    
-    Stream *debugOutputStream = NULL;
+        
     inline static Crowpanel *globalInstance = NULL; // Pointer to singleton instance
 
     DisplayRotation rotation = NO_ROTATION;
@@ -327,7 +324,7 @@ private:
     const int VERTICAL_LIMIT = 100;        
 
     // Counts completed button clicks until the single/double-click window closes.
-    volatile int pressCount;
+    volatile int pressCount = 0;
 
     /* Incremented by the GPIO sampling task for every rotary step. Button clicks
     * are accepted only if this value stays unchanged for the complete gesture

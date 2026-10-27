@@ -84,22 +84,33 @@ void scaleDragEventCallback(lv_event_t * e);
  * @return void
  */
 void setup() {
+  
+  // So our debugging output can go to Serial
+  Serial.begin(115200);
+  while(!Serial) delay(100);
+
+  // Initialize our debugging framework but suppress all debugging output to
+  // preserve performance (call debug.begin(true) to see all the messages)
+  debug.begin(false);
+  debug << "Debug framework initialized" << endl;
+
   // Initialize the Crowpanel object
   panel.begin();
   
-  // Set display rotation
+  // Set display rotation (that's for my setup -- you may want to remove this)
   panel.setDisplayRotation(Crowpanel::DisplayRotation::ROTATION_90_CCW);
 
-  // Set initial display brightness  
+  // Set initial display brightness (otherwise it defaults to 255)
   panel.setBacklight(currentDisplayBrightness = 200);
 
   // Initialize the Squareline Studios-generated UI
   ui_init();
   
-  // Add a scale to the brightness arc
+  // Add a scale to the brightness arc (note: Squareline Studios does not
+  // support LVGL scale objects so we need to create it manually)
   arcScale = lv_scale_create(ui_brightnessArc); 
 
-  // Scale position and size of arc to match UI arc
+  // Scale position and size of arc to match the arc in the UI
   lv_obj_set_size(arcScale, lv_pct(100), lv_pct(100)); 
   lv_obj_center(arcScale);
   lv_scale_set_mode(arcScale, LV_SCALE_MODE_ROUND_INNER);
@@ -175,6 +186,9 @@ void setup() {
  * @return void
  */
 void setTargetBrightness(uint8_t value) {
+
+  debug << "Setting target brightness to " << value << endl;
+
   // Record the new target value
   targetDisplayBrightness = value;
 
@@ -290,6 +304,8 @@ void scaleClickEventCallback(lv_event_t * e) {
   lv_point_t click_point;
   lv_indev_get_point(indev, &click_point);
 
+  debug << "Scale clicked at position x=" << click_point.x << " y=" << click_point.y << endl;
+
   setTargetBrightness_from_click(click_point);
 }
 
@@ -312,6 +328,8 @@ void scaleDragEventCallback(lv_event_t * e) {
 
   accum_x += vect.x;
   accum_y += vect.y;
+
+  debug << "Dragging by x=" << vect.x << " y=" << vect.y << endl;
 
   // Only trigger a display update if total movement is >= 3 pixels
   // This is to avoid overloading the I2C bus with LVGL updates
@@ -338,6 +356,8 @@ void scaleDragEventCallback(lv_event_t * e) {
  * @return void
  */
 void resetBrightnessCallback() {
+  debug << "Brightness reset to 200" << endl;
+
   setTargetBrightness(200);
 }
 
@@ -350,6 +370,8 @@ void resetBrightnessCallback() {
  * @return void
  */
 void handleEncoderRotationAction(int delta) {
+  debug << "Encoder turned by " << delta << endl;
+
   setTargetBrightness(targetDisplayBrightness + delta);
 }
 

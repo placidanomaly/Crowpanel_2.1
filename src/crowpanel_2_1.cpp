@@ -33,12 +33,10 @@ Crowpanel& Crowpanel::getInstance() {
     return *globalInstance;
 }
 
-Crowpanel::Crowpanel() {        
+Crowpanel::Crowpanel() {  
 }
 
-void Crowpanel::begin(Stream *stream) {
-    
-    debugOutputStream = stream == NULL ? &Serial : stream;
+void Crowpanel::begin() {       
 
     tsPanel = new Adafruit_CST8XX();
 
@@ -63,12 +61,13 @@ void Crowpanel::begin(Stream *stream) {
       st7701_type5_init_operations, sizeof(st7701_type5_init_operations));
    
     delay(100);
-    debugOutputStream->printf("[BOOT] ESP32 Arduino %s, LVGL %d.%d.%d, reset_reason=%d\n",
-                    ESP_ARDUINO_VERSION_STR, LVGL_VERSION_MAJOR, LVGL_VERSION_MINOR,
-                    LVGL_VERSION_PATCH, (int)esp_reset_reason());
-    debugOutputStream->println("[BOOT] Crowpanel initialization starting...");                    
+    debug << "[BOOT] ESP32 Arduino " << ESP_ARDUINO_VERSION_STR 
+		  << ", LVGL " << LVGL_VERSION_MAJOR << "." << LVGL_VERSION_MINOR 
+		  << "." << LVGL_VERSION_PATCH << "reset_reason=" << (int)esp_reset_reason() << endl;
+    debug << "[BOOT] Crowpanel initialization starting" << endl;                    
+	
     Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
-    debugOutputStream->println("[BOOT] I2C initialized");                    
+    debug << "[BOOT] I2C initialized\n" << endl;
     
     pcf8574.pinMode(P0, OUTPUT);        //tp RST
     pcf8574.pinMode(P2, OUTPUT);        //tp INT
@@ -84,12 +83,13 @@ void Crowpanel::begin(Stream *stream) {
     ledcAttachChannel(BREATH_LED_PIN, pwmFreq, pwmResolution, 1);
     setBreathLEDIntensity();
 
-    debugOutputStream->print("Init pcf8574...\n");
+    debug << "Init pcf8574... ";
     if (pcf8574.begin()) {
-        debugOutputStream->println("pcf8574 OK");
+        debug << "pcf8574 OK";
     } else {
-        debugOutputStream->println("pcf8574 KO");
+        debug << "pcf8574 KO";
     }
+	debug << endl;
 
     // Initialize LCD and touchscreen
     setLCDPower(ON);
@@ -106,9 +106,9 @@ void Crowpanel::begin(Stream *stream) {
     panelInitBus->endWrite();
 
     if (!tsPanel->begin(&Wire, I2C_TOUCH_ADDR)) {
-        debugOutputStream->println("No touchscreen found");
+        debug << "No touchscreen found" << endl;
     } else {
-        debugOutputStream->println("Touchscreen found");
+        debug << "Touchscreen found" << endl;
     }
 
     pinMode(ENCODER_A_PIN, INPUT);
@@ -117,16 +117,17 @@ void Crowpanel::begin(Stream *stream) {
     // Initialize LVGL which we need to process touchscreen events
     lv_init();
     lv_tick_set_cb(millis);
-    debugOutputStream->printf("[BOOT] Initializing LVGL with screen size %dx%d\n", SCREEN_WIDTH, SCREEN_HEIGHT);
+    debug << "[BOOT] Initializing LVGL with screen size " 
+		  << SCREEN_WIDTH << "x" << SCREEN_HEIGHT << endl;
     size_t buffer_size = sizeof(uint16_t) * SCREEN_WIDTH * SCREEN_HEIGHT;
     buf1 = (uint8_t *)heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
     buf2 = (uint8_t *)heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
     if (!buf1)
-        debugOutputStream->println("Failed to allocate for LVGL---1---");
+        debug << "Failed to allocate for LVGL---1---" << endl;
     if (!buf2)
-        debugOutputStream->println("Failed to allocate for LVGL---2---");
+        debug << "Failed to allocate for LVGL---2---" << endl;
     if (!buf1 || !buf2) {
-        debugOutputStream->println("[FATAL] LVGL framebuffer allocation failed");
+        debug << "[FATAL] LVGL framebuffer allocation failed" << endl;
         while (true) delay(1000);
     }
 
@@ -145,7 +146,7 @@ void Crowpanel::begin(Stream *stream) {
 
     encoderActionQueue = xQueueCreate(16, sizeof(EncoderAction));
     if (!encoderActionQueue) {
-        debugOutputStream->println("[FATAL] Failed to create encoder queue");
+        debug << "[FATAL] Failed to create encoder queue" << endl;
     }
     xTaskCreatePinnedToCore(encTaskSafe, "ENC", 2048, this, 1, NULL, 0);
 
@@ -230,12 +231,8 @@ void Crowpanel::touch_hardware_task(void *pvParameters) {
           }
           panel->shared_is_pressed.store(true, std::memory_order_relaxed);
 
-    #ifdef DEBUG
-          panel->debugOutputStream->print("[TOUCH] x=");
-          panel->debugOutputStream->print(stableX);
-          panel->debugOutputStream->print(" y=");
-          panel->debugOutputStream->println(stableY);
-    #endif
+    
+          debug << "[TOUCH] x=" << stableX << " y=" << stableY << endl;
         }
         else
         {
@@ -334,38 +331,38 @@ void Crowpanel::handleEncoderAction(EncoderAction &action) {
   const EncoderActionType type = action.type;
 
   if (type == ENCODER_CLICK) {
-#ifdef DEBUG
-    debugOutputStream->println("[ENC] Click");
-#endif
+
+    debug << "[ENC] Click" << endl;
+
     if(performClickAction != NULL) performClickAction();    
     return;
   }
   if (type == ENCODER_LONG_PRESS) {
-#ifdef DEBUG
-    debugOutputStream->println("[ENC] Long press");
-#endif
+
+    debug << "[ENC] Long press"	<< endl;
+
     if(performLongPressAction != NULL) performLongPressAction();    
     return;
   }
   if (type == ENCODER_DOUBLE_CLICK) {
     if (action.rotationSequence != encoderRotationSequence) {
-#ifdef DEBUG      
-      debugOutputStream->println("[ENC] Stale double click cancelled by rotation");
-#endif
+      
+      debug << "[ENC] Stale double click cancelled by rotation" << endl;
+
       return;
     }
-#ifdef DEBUG
-    debugOutputStream->println("[ENC] Double-click");
-#endif
+
+    debug << "[ENC] Double-click" << endl;
+
     if(performDoubleClickAction != NULL) performDoubleClickAction();
     performDoubleClickAction();
     return;
   }
 
   const int delta = (type == ENCODER_ROTATE_CW) ? 1 : -1;
-#ifdef DEBUG
-    debugOutputStream->println("[ENC] Rotation");
-#endif
+
+  debug << "[ENC] Rotation" << endl;
+
 
   static unsigned long lastRotation = 0;
   if(performEncoderRotationAction != NULL) {
@@ -375,9 +372,9 @@ void Crowpanel::handleEncoderAction(EncoderAction &action) {
     if(now - lastRotation < 600) accelerationFactor = 2;
     if(now - lastRotation < 300) accelerationFactor = 3;
 
-#ifdef DEBUG
-    Serial.printf("[ENC] Rotation action %d (%d ms since last rotation)\n", delta * accelerationFactor, now - lastRotation);
-#endif
+    debug << "[ENC] Rotation action " << delta * accelerationFactor 
+		  << "(" << now-lastRotation << "msms since last rotation)" << endl;
+
     lastRotation = now;
     performEncoderRotationAction(delta * accelerationFactor);
   }
@@ -436,14 +433,13 @@ void Crowpanel::pollEncoderButton() {
   if (sampledState != rawState) {
     rawState = sampledState;
     rawChangedMs = now;
-#ifdef DEBUG
-  debugOutputStream->println("[ENC] P5 state changed.");
-#endif
+
+    debug << "[ENC] P5 state changed" << endl;
   }
 
-  if (rawState != stableState && now - rawChangedMs >= debounceTime) {
+  if (rawState != stableState && now - rawChangedMs >= debounceTime) {    
     stableState = rawState;
-    if (stableState == LOW) {
+    if (stableState == LOW) {      
       pressedMs = now;
       pressRotationSequence = encoderRotationSequence;
       longPressDispatched = false;
@@ -453,7 +449,7 @@ void Crowpanel::pollEncoderButton() {
       pressedMs = 0;
       if (completedWithoutRotation) {
         if (pressCount == 0) pendingClickRotationSequence = encoderRotationSequence;
-        pressCount = pressCount + 1; // ++ on volatile variables deprecated
+        pressCount = pressCount + 1;        
         singleClickTimeout = now + doubleClickTime;
       } else {
         pressCount = 0;
@@ -528,9 +524,9 @@ void Crowpanel::loop() {
     pollEncoderButton();
     Crowpanel::EncoderAction action;
     while(encoderActionQueue && xQueueReceive(encoderActionQueue, &action, 0) == pdTRUE) {
-#ifdef DEBUG
-        debugOutputStream->printf("[ENC] Action dequeued: type=%d, rotationSequence=%u\n", action.type, action.rotationSequence);
-#endif
+
+        debug << "[ENC] Action dequeued: type=" << action.type << ", rotationSequence=" << action.rotationSequence << endl;
+
         handleEncoderAction(action);
     }
 }
