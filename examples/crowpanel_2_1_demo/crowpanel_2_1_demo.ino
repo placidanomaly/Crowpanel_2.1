@@ -86,11 +86,11 @@ void scaleDragEventCallback(lv_event_t * e);
 void setup() {
   
   // So our debugging output can go to Serial
-  Serial.begin(115200);
-  while(!Serial) delay(100);
+  Serial.begin(115200);  
 
   // Initialize our debugging framework but suppress all debugging output to
-  // preserve performance (call debug.begin(true) to see all the messages)
+  // preserve performance (call debug.begin(true) to see all the messages on
+  // the serial monitor)
   debug.begin(false);
   debug << "Debug framework initialized" << endl;
 

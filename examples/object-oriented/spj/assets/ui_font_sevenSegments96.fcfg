@@ -1,0 +1,16 @@
+{
+  "codename": "sevenSegments96",
+  "ttf_path": "/assets/DSEG7Classic-Italic.ttf",
+  "bin_path": "/assets\\ui_font_sevenSegments96.bin",
+  "c_path": "/assets\\ui_font_sevenSegments96.c",
+  "cfg_path": "/assets\\ui_font_sevenSegments96.fcfg",
+  "size": 96,
+  "bpp": 1,
+  "letters": 0,
+  "ranges": [
+    "0x20-0x3a"
+  ],
+  "symbols": "",
+  "customparams": "--no-compress --no-prefilter",
+  "uploaded": false
+}

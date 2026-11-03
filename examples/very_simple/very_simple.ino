@@ -11,7 +11,7 @@ void clickCallback();
 void setup() {
 
   Serial.begin(115200);
-
+  
   // Initialize our panel object
   panel.begin();
 
@@ -22,6 +22,8 @@ void setup() {
   lv_obj_t *label = lv_label_create(lv_screen_active());
   lv_label_set_text_static(label, "Hello Crowpanel 2.1!");
   lv_obj_center(label);
+
+  Serial.println("Program initialized.");
 }
 
 void clickCallback() {
@@ -33,9 +35,6 @@ void clickCallback() {
 
 void loop() {
   panel.loop();
-
-  // LVGL event loop
-  lv_timer_handler();
 
   // Let MCU breath a bit
   vTaskDelay(pdMS_TO_TICKS(15)); 

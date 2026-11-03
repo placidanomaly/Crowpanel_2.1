@@ -1,0 +1,36 @@
+default_profile: crowpanel_21_hmi
+
+profiles:
+  crowpanel_21_hmi:
+    # Fully Qualified Board Name for ESP32S3 Dev Module
+    fqbn: esp32:esp32:esp32s3
+    
+    # Optional hardware index URL required for the compilation platform
+    hardware_platform_index_url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+    
+    # Custom Board Configuration Options mapped to Arduino Tools settings
+    custom_options:
+      # Enables Serial printing/debugging over the onboard Type-C port
+      - USB_CDC_On_Boot=cdc
+      
+      # Configures the memory type utilized by the 2.1" module
+      - PSRAM=opi
+      
+      # Selects a 16MB Flash memory map
+      - FlashSize=16M
+      
+      # Changes the partitioning scheme so massive UI libraries fit (3MB App / No OTA)
+      - PartitionScheme=huge
+
+libraries:
+  - name: "lvgl"
+    version: "9.5.0"
+  - name: "PCF8574_library"
+    git_url: "https://github.com/xreef/PCF8574_library.git"
+  - name: "Adafruit CST8XX Library"
+    version: "1.0.1"
+  - name: "GFX Library for Arduino"
+    version: "1.4.7"
+  - name: "Adafruit BusIO"
+    version: "1.16.1"
+  
