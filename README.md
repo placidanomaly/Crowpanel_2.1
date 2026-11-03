@@ -17,12 +17,14 @@ The following capabilities are provided:
 - Backlight intensity
 - Touchscreen event handling through the LVGL input device framework
 - Rotary control event handling including clicks, double-clicks, long presses, and rotation
+- Light and Deep Sleep functionality
+- A full object-oriented helper class to write C++ programs using inheritance instead of callbacks (recommended)
 
 There are no special helper functions needed to access the UART or I2C pins on the back of the device, this can be done with the standard Arduino or ESP libraries.
 
 # Arduino IDE settings
 
-In order to compile this library and the example program successfully, the following settings must be applied in the Arduino IDE:
+In order to compile this library and the example program successfully, the following settings must be applied in the Arduino IDE (or make sure that the sketch.yaml file from the examples is present along with your .INO file:
 
 - Board type: ESP32S3 Dev Module (add this library if needed: https://espressif.github.io/arduino-esp32/package_esp32_index.json )
 
@@ -32,6 +34,12 @@ In order to compile this library and the example program successfully, the follo
 - Partition Scheme: Huge App
 
 # Example Programs
+
+## object-oriented
+
+This is an example that uses the CrowController class to derive a controller class that interacts with the Crowpanel. In the opinion of the author of this library, this is the best way to write a program for the Crowpanel device. This particular example also illustrates the use of a sleep timeout, as well as saving state to RTC memory before going to sleep, and restoring state afterward. The example also shows how to persist data to the device using the Preferences object.
+
+The program is a simple countdown timer. Rotate the encoder to set the time: fast rotation will increment/decrement minutes, while slower rotation will change the seconds. Pressing the encoder will start and stop the timer. The button on the screen can also be used to start and stop the timer.
 
 ## very_simple
 
