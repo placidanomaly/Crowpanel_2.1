@@ -23,9 +23,29 @@ SOFTWARE.
 */
 
 //! Crowpanel_2_1 library
-/*! The Crowpanel_2_1 library provides an easy interface to use all the functinality
-    of a Crowpanel 2.1" LCD display with touchscreen and rotary encoder
+/*! The Crowpanel_2_1 library provides an easy interface to use all the functionality
+    of a Crowpanel 2.1" LCD display with touchscreen and rotary encoder.
+
+    There are two classes in this library: Crowpanel and CrowController. 
+    
+    Crowpanel class
+    ---------------
+    The Crowpanel class provides low-level access to the hardware and is used
+    to initialize the display, set brightness, and register callbacks for the rotary
+    encoder and touchscreen. It is intended to be used in traditional C projects.
+    
+    CrowController class
+    --------------------
+    The CrowController class is a base class that can be extended to implement 
+    custom behavior for the rotary encoder and touchscreen events. It provides 
+    higher-level methods to handle click, double-click, long press, and encoder 
+    rotation events through more elegant C++ inheritance. It also implements
+    automated sleep management functionality. If you are building a C++ project, 
+    you should extend this class to implement your own controller logic instead
+    of calling the low-level functions directly. Your program will be much 
+    cleaner and easier to maintain.
 */
+
 #ifndef CROWPANEL_2_1_H
 #define CROWPANEL_2_1_H
 
@@ -41,7 +61,7 @@ SOFTWARE.
 // Hardware pin assignments. These are fixed on the Crowpanel.
 #define I2C_SDA_PIN 38
 #define I2C_SCL_PIN 39
-#define BREATH_LED_PIN 43
+#define ONBOARD_LED_PIN 1
 #define SCREEN_BACKLIGHT_PIN 6
 #define ENCODER_A_PIN 42
 #define ENCODER_B_PIN 4
@@ -52,6 +72,7 @@ SOFTWARE.
 // PCF8574 I2C address for the I/O expander that provides reset,
 // power, interrupt, and encoder-button I/O.
 #define I2C_PCF8574_ADDR 0x21
+#define I2C_PCF8574_INT_PIN GPIO_NUM_4 
 
 // Screen dimensions
 #define SCREEN_WIDTH 480
@@ -148,7 +169,7 @@ public:
      * @param [in] intensity An optional 0-255 value of intensity for the
      * rotary control LED. Leaving this empty sets the intensity to 255.
      */
-    void setBreathLEDIntensity(uint8_t intensity = 255);
+    void setOnboardLEDIntensity(uint8_t intensity = 255);
 
     enum DisplayRotation : int8_t { NO_ROTATION = 0, ROTATION_90_CW, ROTATION_180, ROTATION_90_CCW };
     /**
@@ -187,30 +208,54 @@ public:
     void setDoubleClickDelayMS(uint32_t doubleClickDelay);
 
     /**
-     * @brief Specified a callback function to be invoked when a click event occurs
+     * @brief Specifies a callback function to be invoked when a click event occurs
      * @param [in] clickActionCB A pointer to the callback function
+     * @param [in] context An optional data element to be passed to the callback function whenever
+     * it is invoked (useful to use C++ member functions as callbacks)
      * 
-     * Usage example:
+     * Usage example with normal C function:
      * 
      *      void clickCallback() {
      *          Serial.println("Click event received");
      *      }
      *      ...
      *      panel.setClickActionCallback(clickCallback);
+     * 
+     * Usage example with a C++ class:
+     * 
+     *      class MyClass {
+     *          void clickCallback() {
+     *              Serial.println("Click event received in C++ member function");
+     *          }
+     *      };
+     *      ...
+     *      MyClass class;
+     * 
+     *      // Here we use a lambda function to direct the callback to the right
+     *      // class instance
+     *      panel.registerClickActionCallback([](void *context){
+     *          static_cast<MyClass *>(context)->clickCallback();
+     *      }, &myclass)
      */
     void registerClickActionCallback(void (*clickActionCB)());
+    void registerClickActionCallback(void (*clickActionCB)(void *), void *context);
     
     /**
-     * @brief Specified a callback function to be invoked when a long press event occurs
+     * @brief Specifies a callback function to be invoked when a long press event occurs
      * @param [in] longPressActionCB A pointer to the callback function
+     * @param [in] context Optional. See doc for registerClickActionCallback for details
      */
     void registerLongPressActionCallback(void (*longPressActionCB)());
+    void registerLongPressActionCallback(void (*longPressActionCB)(void *), void *context);
     
     /**
-     * @brief Specified a callback function to be invoked when a double-click event occurs
+     * @brief Specifies a callback function to be invoked when a double-click event occurs
+     * @param [in] doubleClickActionCB A pointer to the callback function
+     * @param [in] context Optional. See doc for registerClickActionCallback for details
      */
     void registerDoubleClickActionCallback(void (*doubleClickActionCB)());
-    
+    void registerDoubleClickActionCallback(void (*doubleClickActionCB)(void *), void *context);
+
     /**
      * @brief This enum contains the various signals that the encoder can pass
      * to its callback functions.
@@ -238,13 +283,15 @@ public:
      * Note that if this callback function is set, it is called IN ADDITION to
      * the click, double-click, long press, and encoder rotation callbacks.
      * 
-     * param [in] A pointer to the callback function, which must take a reference
+     * @param [in] encoderActionCB A pointer to the callback function, which must take a reference
      * to an EncoderAction object as parameter
+     * @param [in] context Optional. See doc for registerClickActionCallback for details
      */
     void registerRawEncoderActionCallback(void (*encoderActionCB)(EncoderAction&));
+    void registerRawEncoderActionCallback(void (*encoderActionCB)(EncoderAction&, void *), void *context);
     
     /**
-     * @brief Specified a callback function to be invoked when the rotary encoder
+     * @brief Specifies a callback function to be invoked when the rotary encoder
      * is moved.
      * 
      * The movement of the encoder is passed as a parameter to the callback function.
@@ -256,16 +303,22 @@ public:
      * @param [in] accelerated A boolean value that specifies whether the amplitude of
      * the rotation should be modulated according to the speed at which the rotation
      * is made. When set to false, the rotation passed to the callback is either +1 or -1.
-     * When set to TRUE, the rotation value will be 3 if the call is within 30ms of
-     * the last one, 2 if within 200ms, and 1 if over 600ms.
+     * When set to TRUE, the rotation value will be 2 if the call is within 200ms of
+     * the last one, 1 otherwise.
+     * @param [in] context Optional. See doc for registerClickActionCallback for details
      */
     void registerEncoderRotationActionCallback(void (*encoderActionCB)(int), bool accelerated = false);
+    void registerEncoderRotationActionCallback(void (*encoderActionCB)(int, void *), void *context, bool accelerated = false);
 
     /**
      * @brief Returns a pointer to the GFX object of the LCD display.
      * @return A pointer to an Arduino_RGB_Display
      */
     Arduino_RGB_Display *getDisplayGfx();
+
+    void goToDeepSleep();
+    bool wokeUpFromDeepSleep();
+    void goToLightSleep();
 
 private:
     /**
@@ -354,7 +407,160 @@ private:
     void (*performEncoderRotationAction)(int) = NULL;    
     void (*handleRawEncoderAction)(EncoderAction&) = NULL;
 
+    void (*performClickActionWithContext)(void *) = NULL;
+    void (*performLongPressActionWithContext)(void *) = NULL;
+    void (*performDoubleClickActionWithContext)(void *) = NULL;
+    void (*performEncoderRotationActionWithContext)(int, void *) = NULL;    
+    void (*handleRawEncoderActionWithContext)(EncoderAction&, void*) = NULL;
+    void *clickCallbackContext = NULL;
+    void *longPressCallbackContext = NULL;
+    void *doubleClickCallbackContext = NULL;
+    void *encoderRotationCallbackContext = NULL;
+    void *rawEncoderActionCallbackContext = NULL;
+
     bool acceleratedRotation = false;
+};
+ 
+
+/** CrowController class
+ * 
+ * This class is designed to be extended to implement custom behavior for the rotary
+ * encoder and touchscreen events. 
+ * 
+ * It should be instantiated as a singleton, meaning that your derived class must
+ * implement a static getInstance() method that returns a reference to a single
+ * global instance of your derived class.
+ * 
+ * See the object-oriented example in the examples/ directory for a demonstration 
+ * of how to extend this class to implement your own controller logic.
+ */
+
+class CrowController {
+    public:
+        /**
+         * @brief Initializes the panel, display, and all devices
+         * 
+         * Must be called before using the panel in the setup() function 
+         * of your main program. See example usage in activate() function doc.
+         */
+        virtual void begin(Crowpanel &panel);
+ 
+        /** @brief Call this method to activate this controller object and
+         * cause it to handle user inputs. You can implement 
+         * this method in your derived class to perform any additional logic
+         * when the controller is activated, such as updating the display or resetting
+         * internal state.
+         * NOTE: This member function MUST be called in order to enable
+         * events to this object.
+         * 
+         * Typical usage:
+         * 
+         *      Crowpanel &panel = Crowpanel::getInstance();
+         *      panel.begin();
+         *
+         *      // Initialize UI before calling begin() on controller
+         *      // because the controller object may manipulate the UI
+         *      // in its begin() function 
+         *      ui_init();
+         * 
+         *      CrowController &controller = CrowController.getInstance();
+         *      controller.begin(panel);
+         *      controller.activate();
+         */
+        virtual void activate();
+
+        /** @brief Call this method to deactivate this controller object and
+         * stop it from handling user inputs. This is called automatically when 
+         * the controller is no longer the active controller. This is typically
+         * done when control is transferred to another CrowController object
+         * which handles a different screen in the application.
+        */
+        virtual void deactivate();
+        
+        /** @brief Check if the controller is currently activated
+         * @return true if the controller is activated, false otherwise
+         */
+        bool isActivated();
+
+        /** @brief Handle click/double-click/long press/encoder rotation events.
+         *  Override these functions to implement custom behavior
+         *  in your derived class.
+         */
+        virtual void click() {};
+        virtual void doubleClick() {};
+        virtual void longPress() {};
+        virtual void encoderRotation(int delta) {};
+
+        /** @brief Main loop function for the controller
+         *  Override this function to implement custom behavior
+         *  in your derived class. Make sure your main program
+         *  calls the loop() function of your derived class in its 
+         *  own loop() function. 
+         * 
+         *  If you do override this function,
+         *  make sure to call the base class CrowController::loop()
+         *  function in your override to ensure that the encoder and 
+         *  touchscreen events are processed correctly.
+         */
+        virtual void loop();
+
+        /** @brief Reset the sleep timeout. This function is automatically
+         * called whenever a user input is received. You can also call it in
+         * your derived class to prevent the controller from going to sleep if 
+         * you have a long-running operation that does not involve user input.
+         */
+        void resetSleepTimeout();
+
+        /** @brief Save the state of the controller before entering deep sleep.
+         *  Override this function in your derived class to save any state 
+         *  that needs to be restored after waking up from deep sleep. This 
+         * function is automatically called before entering deep sleep.
+         */
+        virtual void saveStateBeforeDeepSleep() {};
+
+        /** @brief Restore the state of the controller after exiting deep sleep.
+         *  Override this function in your derived class to restore any state 
+         *  that was saved before entering deep sleep. This function is automatically
+         *  called during reboot after exiting deep sleep.
+         */
+        virtual void restoreStateAfterDeepSleep() {};
+
+        /** @brief Put the controller into deep sleep mode. This function is automatically
+         * called when the Deep Sleep timeout has elapsed, but it can also be called 
+         * in your derived class to put the controller into deep sleep mode for some
+         * other reason. See ESP32 documentation about sleep modes.
+         * The controller will wake up upon a rotation of the encoder.
+         */
+        void goToDeepSleep();
+
+        /** @brief Put the controller into light sleep mode. This function is automatically
+         * called when the Sleep timeout has elapsed. See ESP32 documentation about sleep modes.
+         * The controller will wake up upon a rotation of the encoder or a touch
+         * on the touchscreen.
+         */
+        void goToLightSleep();
+
+        /** @brief Sets the Light Sleep timeout
+         * @param [in] sleepSeconds The number of seconds of inactivity before going to light sleep.
+         * If set to 0, the controller will never go to light sleep.
+         */
+        void setSleepTimeout(unsigned long sleepSeconds);
+        /** @brief Sets the Deep Sleep timeout
+         * @param [in] sleepSeconds The number of seconds of inactivity before going to deep sleep.
+         * If set to 0, the controller will never go to deep sleep.
+         */
+        void setDeepSleepTimeout(unsigned long sleepSeconds);
+
+    protected:        
+        Crowpanel *panel = NULL;
+        CrowController();
+        
+    private:
+        bool active = false;
+        unsigned long sleepTimeout = 0; // Sleep timeout in milliseconds (0 = for never)
+        unsigned long deepSleepTimeout = 0; // Deep sleep timeout (0 = never)
+        unsigned long timeoutLightSleep = 0;
+        unsigned long lastActiveMillis;
 };
 
 #endif // CROWPANEL_2_1_H

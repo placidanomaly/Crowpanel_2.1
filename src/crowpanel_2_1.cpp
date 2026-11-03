@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 #include "crowpanel_2_1.h"
+#include "driver/rtc_io.h" 
+#include "soc/rtc_io_channel.h"
 
 void my_disp_flush(lv_display_t *display, const lv_area_t *area, uint8_t *px_map);
 
@@ -32,11 +34,15 @@ Crowpanel& Crowpanel::getInstance() {
     }
     return *globalInstance;
 }
-
+ 
 Crowpanel::Crowpanel() {  
 }
 
-void Crowpanel::begin() {       
+void Crowpanel::begin() {
+    static bool initialized = false;
+
+    if(initialized) return;
+    initialized = true;
 
     tsPanel = new Adafruit_CST8XX();
 
@@ -75,21 +81,17 @@ void Crowpanel::begin() {
     pcf8574.pinMode(P4, OUTPUT);        //lcd reset
     pcf8574.pinMode(P5, INPUT_PULLUP);  //encoder SW
 
-    // Set PWM mode for backlight light
+    // Set PWM mode for backlight and onboard LED lights
     ledcAttachChannel(SCREEN_BACKLIGHT_PIN, pwmFreq, pwmResolution, 0);
-    setBacklight();
+    ledcAttachChannel(ONBOARD_LED_PIN, pwmFreq, pwmResolution, 1);
 
-    // Set breath
-    ledcAttachChannel(BREATH_LED_PIN, pwmFreq, pwmResolution, 1);
-    setBreathLEDIntensity();
-
-    debug << "Init pcf8574... ";
+    debug << "[PANEL] Init pcf8574... ";
     if (pcf8574.begin()) {
         debug << "pcf8574 OK";
     } else {
         debug << "pcf8574 KO";
     }
-	debug << endl;
+	  debug << endl;
 
     // Initialize LCD and touchscreen
     setLCDPower(ON);
@@ -98,21 +100,21 @@ void Crowpanel::begin() {
     
     gfx->begin();
     
-    // The new SquareLine LVGL 9 assets are native RGB565. Keep MADCTL's BGR
-    // bit set for this ST7701 panel so blue (for example 0x0294) stays blue.
+    // Set panel color mode to RGB to match our library
     panelInitBus->beginWrite();
     panelInitBus->writeCommand(0x36);
     panelInitBus->write(0x00);
     panelInitBus->endWrite();
 
+    // Initialize touchscreen
     if (!tsPanel->begin(&Wire, I2C_TOUCH_ADDR)) {
-        debug << "No touchscreen found" << endl;
+        debug << "[PANEL] No touchscreen found" << endl;
     } else {
-        debug << "Touchscreen found" << endl;
+        debug << "[PANEL] Touchscreen found" << endl;
     }
 
-    pinMode(ENCODER_A_PIN, INPUT);
-    pinMode(ENCODER_B_PIN, INPUT);
+    pinMode(ENCODER_A_PIN, INPUT_PULLUP);
+    pinMode(ENCODER_B_PIN, INPUT_PULLUP);
 
     // Initialize LVGL which we need to process touchscreen events
     lv_init();
@@ -135,14 +137,15 @@ void Crowpanel::begin() {
 
     lv_display_set_color_format(display, LV_COLOR_FORMAT_RGB565);
     
-    lv_display_set_flush_cb(display, my_disp_flush);
-    /* Only copy invalidated regions. Full rendering copied all 480x480 pixels
-        for every touch-state change and caused visible tearing on the RGB panel. */
+    // Set LVGL render mode to partial so only invalidated screen areas
+    // are repainted
     lv_display_set_buffers(display, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    lv_display_set_flush_cb(display, my_disp_flush);
 
     delay(200);
+    setLCDPower(ON);
     setBacklight();
-    pcf8574.digitalWrite(P3, LOW);
+    setOnboardLEDIntensity();
 
     encoderActionQueue = xQueueCreate(16, sizeof(EncoderAction));
     if (!encoderActionQueue) {
@@ -175,18 +178,9 @@ void Crowpanel::setDisplayRotation(DisplayRotation rotationFlag) {
   gfx->setRotation(rotation);
 }
 
-/*---------------------------------------------------------------
- * LVGL display output
- * Convert LVGL's RGB565 output to the panel's channel order and
- * copy only the invalidated rectangle to the screen.
- *--------------------------------------------------------------*/
-
 /**
  * @brief Flush an LVGL drawing area to the RGB display.
- *
- * Swaps the red and blue RGB565 fields required by this ST7701 wiring,
- * writes the resulting pixels, and then releases LVGL's draw buffer.
- *
+ * *
  * @param display LVGL display that requested the flush operation.
  * @param area Inclusive rectangle that must be transferred.
  * @param px_map RGB565 pixel data produced by LVGL.
@@ -275,6 +269,7 @@ void Crowpanel::my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
             data->point.y = SCREEN_WIDTH - temp;
           }
           break;
+        case 0: break; // To suppress a warning about not all cases being included
       }
       data->state = LV_INDEV_STATE_PR;
     }
@@ -291,8 +286,8 @@ void Crowpanel::setBacklight(uint8_t intensity) {
   ledcWrite(SCREEN_BACKLIGHT_PIN, intensity);
 }
 
-void Crowpanel::setBreathLEDIntensity(uint8_t intensity) {
-  ledcWrite(BREATH_LED_PIN, intensity);
+void Crowpanel::setOnboardLEDIntensity(uint8_t intensity) {
+  ledcWrite(ONBOARD_LED_PIN, intensity);
 }
 
 void Crowpanel::setLongPressDelayMS(uint32_t longPressDelay) {
@@ -304,23 +299,49 @@ void Crowpanel::setDoubleClickDelayMS(uint32_t doubleClickDelay) {
 }
 
 void Crowpanel::registerClickActionCallback(void (*clickActionCB)()) {
-    performClickAction = clickActionCB;
+    performClickAction = clickActionCB;    
+}
+
+void Crowpanel::registerClickActionCallback(void (*clickActionCB)(void *), void *context) {
+    clickCallbackContext = context;
+    performClickActionWithContext = clickActionCB;    
 }
 
 void Crowpanel::registerLongPressActionCallback(void (*longPressActionCB)()) {
     performLongPressAction = longPressActionCB;
 }
 
+void Crowpanel::registerLongPressActionCallback(void (*longPressActionCB)(void *), void *context) {
+    longPressCallbackContext = context;
+    performLongPressActionWithContext = longPressActionCB;    
+}
+
 void Crowpanel::registerDoubleClickActionCallback(void (*doubleClickActionCB)()) {
     performDoubleClickAction = doubleClickActionCB;
+};
+
+void Crowpanel::registerDoubleClickActionCallback(void (*doubleClickActionCB)(void *), void *context) {
+    doubleClickCallbackContext = context;
+    performDoubleClickActionWithContext = doubleClickActionCB;
 };
 
 void Crowpanel::registerRawEncoderActionCallback(void (*encoderActionCB)(EncoderAction&)) {
     handleRawEncoderAction = encoderActionCB;
 }
 
+void Crowpanel::registerRawEncoderActionCallback(void (*encoderActionCB)(EncoderAction&, void *), void *context) {
+    rawEncoderActionCallbackContext = context;
+    handleRawEncoderActionWithContext = encoderActionCB;
+}
+
 void Crowpanel::registerEncoderRotationActionCallback(void (*encoderActionCB)(int), bool accelerated) {
     performEncoderRotationAction = encoderActionCB;
+    this->acceleratedRotation = accelerated;
+}
+
+void Crowpanel::registerEncoderRotationActionCallback(void (*encoderActionCB)(int, void *), void *context, bool accelerated) {
+    encoderRotationCallbackContext = context;
+    performEncoderRotationActionWithContext = encoderActionCB;
     this->acceleratedRotation = accelerated;
 }
 
@@ -334,7 +355,9 @@ void Crowpanel::handleEncoderAction(EncoderAction &action) {
 
     debug << "[ENC] Click" << endl;
 
-    if(performClickAction != NULL) performClickAction();    
+    if(performClickAction != NULL) performClickAction();
+    if(performClickActionWithContext != NULL) performClickActionWithContext(clickCallbackContext);
+
     return;
   }
   if (type == ENCODER_LONG_PRESS) {
@@ -342,6 +365,8 @@ void Crowpanel::handleEncoderAction(EncoderAction &action) {
     debug << "[ENC] Long press"	<< endl;
 
     if(performLongPressAction != NULL) performLongPressAction();    
+    if(performLongPressActionWithContext != NULL) performLongPressActionWithContext(longPressCallbackContext);
+
     return;
   }
   if (type == ENCODER_DOUBLE_CLICK) {
@@ -355,7 +380,8 @@ void Crowpanel::handleEncoderAction(EncoderAction &action) {
     debug << "[ENC] Double-click" << endl;
 
     if(performDoubleClickAction != NULL) performDoubleClickAction();
-    performDoubleClickAction();
+    if(performDoubleClickActionWithContext != NULL) performDoubleClickActionWithContext(doubleClickCallbackContext);
+
     return;
   }
 
@@ -365,18 +391,20 @@ void Crowpanel::handleEncoderAction(EncoderAction &action) {
 
 
   static unsigned long lastRotation = 0;
-  if(performEncoderRotationAction != NULL) {
+  if((performEncoderRotationAction != NULL) || (performEncoderRotationActionWithContext != NULL)) {
     const unsigned long now = millis();
     int accelerationFactor = 1;    
     
-    if(now - lastRotation < 600) accelerationFactor = 2;
-    if(now - lastRotation < 300) accelerationFactor = 3;
+    if(now - lastRotation < 200) accelerationFactor = 2;    
 
     debug << "[ENC] Rotation action " << delta * accelerationFactor 
 		  << "(" << now-lastRotation << "msms since last rotation)" << endl;
 
     lastRotation = now;
-    performEncoderRotationAction(delta * accelerationFactor);
+
+    if(performEncoderRotationAction != NULL) performEncoderRotationAction(delta * accelerationFactor);
+    if(performEncoderRotationActionWithContext != NULL) 
+      performEncoderRotationActionWithContext(delta * accelerationFactor, encoderRotationCallbackContext);
   }
 }
 
@@ -396,7 +424,7 @@ void Crowpanel::encTaskSafe(void *pvParameters) {
     while (true) {
         const int currentAState = digitalRead(ENCODER_A_PIN);
         if (currentAState != previousA && currentAState == HIGH && crowpanel->encoderActionQueue) {
-          crowpanel->encoderRotationSequence = crowpanel->encoderRotationSequence + 1; // ++ on volatile is deprecated
+          crowpanel->encoderRotationSequence = crowpanel->encoderRotationSequence + 1;
           EncoderAction action;
           action.type = (digitalRead(ENCODER_B_PIN) != currentAState)
                           ? ENCODER_ROTATE_CCW : ENCODER_ROTATE_CW;
@@ -508,6 +536,9 @@ void Crowpanel::resetLCD() {
 }
 
 void Crowpanel::resetTouchscreen() {
+  // The touchscreen is connected to the PCF8574 expander.
+  // In order to reset it, we must manipulate the pins on the
+  // expander to which it is connected.
   pcf8574.digitalWrite(P0, HIGH);
   delay(100);
   pcf8574.digitalWrite(P0, LOW);
@@ -524,9 +555,67 @@ void Crowpanel::loop() {
     pollEncoderButton();
     Crowpanel::EncoderAction action;
     while(encoderActionQueue && xQueueReceive(encoderActionQueue, &action, 0) == pdTRUE) {
-
         debug << "[ENC] Action dequeued: type=" << action.type << ", rotationSequence=" << action.rotationSequence << endl;
-
         handleEncoderAction(action);
     }
+
+    // LVGL event loop
+    lv_timer_handler();
+}
+
+bool Crowpanel::wokeUpFromDeepSleep() {
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  return(wakeup_reason == ESP_SLEEP_WAKEUP_EXT1);
+}
+
+void Crowpanel::goToDeepSleep() {    
+    setLCDPower(Crowpanel::DisplayPowerState::OFF);
+    setBacklight(0);
+
+    int stateB = digitalRead(ENCODER_B_PIN);
+
+    uint64_t pin_mask = 1ULL << ENCODER_B_PIN;
+
+    // Determine what logic transition will signal 'movement' based on rest state
+    if (stateB == LOW) {
+        esp_sleep_enable_ext1_wakeup(pin_mask, ESP_EXT1_WAKEUP_ANY_HIGH);
+    } else {
+        esp_sleep_enable_ext1_wakeup(pin_mask, ESP_EXT1_WAKEUP_ANY_LOW);
+    }
+
+    // Start deep sleep
+    esp_deep_sleep_start();
+}
+
+void Crowpanel::goToLightSleep() {
+
+    debug << "[PANEL] Going to light sleep" << endl;
+    debug << "Encoder level = " << gpio_get_level((gpio_num_t)ENCODER_A_PIN) <<  "  Encoder B level = " << gpio_get_level((gpio_num_t)ENCODER_B_PIN) << endl;
+
+    // Configure sleep to wake up on any change in encoder pins (i.e. rotate knob to wake up)
+    gpio_wakeup_enable((gpio_num_t)ENCODER_A_PIN, digitalRead(ENCODER_A_PIN) == HIGH ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
+    gpio_wakeup_enable((gpio_num_t)ENCODER_B_PIN, digitalRead(ENCODER_B_PIN) == HIGH ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+    
+    // Turn off LCD and backlight
+    setBacklight(0);
+    setLCDPower(OFF);
+
+    // Disconnect Serial port because it will die in sleep
+    Serial.end();
+
+    // Start light sleep (RAM stays active, execution pauses here until woken up)
+    esp_light_sleep_start();
+    
+    // Re-enable serial port
+    Serial.begin(115200);
+
+    // Wait for a little while for the encoder rotation to wake up to stop
+    // and clear encoder queue of all accumulated movements
+    delay(250);
+    xQueueReset(encoderActionQueue);
+
+    setLCDPower(ON);
+    setBacklight(255);
 }
