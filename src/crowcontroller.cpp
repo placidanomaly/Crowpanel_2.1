@@ -1,6 +1,13 @@
 #include "crowpanel_2_1.h"
 
-CrowController::CrowController() {    
+CrowController::CrowController() {
+    allControllers.push_back(this);
+}
+
+CrowController::~CrowController() {
+    std::erase_if(CrowController::allControllers, [this](const CrowController * p) { 
+        return p == this;
+    });
 }
 
 void CrowController::begin(Crowpanel &panel) {
@@ -43,6 +50,8 @@ void CrowController::activate() {
         cc->resetSleepTimeout();
         cc->encoderRotation(rotation);
     }, this, true);
+
+    resetSleepTimeout();
 }
 
 void CrowController::deactivate() {
@@ -63,7 +72,7 @@ void CrowController::resetSleepTimeout() {
 }
 
 void CrowController::goToDeepSleep() {
-    saveStateBeforeDeepSleep();
+    for(auto c = allControllers.begin(); c != allControllers.end(); ++c) (*c)->saveStateBeforeDeepSleep();
     panel->goToDeepSleep();
 }
 

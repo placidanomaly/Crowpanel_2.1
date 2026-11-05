@@ -5,9 +5,8 @@
 
 #include "../ui.h"
 
-lv_obj_t * ui_Screen1 = NULL;
+lv_obj_t * ui_timerScreen = NULL;
 lv_obj_t * ui_Label1 = NULL;
-lv_obj_t * ui_Label2 = NULL;
 lv_obj_t * ui_timerLabelBackground = NULL;
 lv_obj_t * ui_timerLabel = NULL;
 lv_obj_t * ui_startStopButton = NULL;
@@ -24,14 +23,14 @@ void ui_event_startStopButton(lv_event_t * e)
 
 // build funtions
 
-void ui_Screen1_screen_init(void)
+void ui_timerScreen_screen_init(void)
 {
-    ui_Screen1 = lv_obj_create(NULL);
-    lv_obj_set_scrollable(ui_Screen1, false);
-    lv_obj_set_style_bg_color(ui_Screen1, lv_color_hex(0x000000), (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_Screen1, 255, (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_timerScreen = lv_obj_create(NULL);
+    lv_obj_set_scrollable(ui_timerScreen, false);
+    lv_obj_set_style_bg_color(ui_timerScreen, lv_color_hex(0x000000), (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_timerScreen, 255, (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Label1 = lv_label_create(ui_Screen1);
+    ui_Label1 = lv_label_create(ui_timerScreen);
     lv_obj_set_width(ui_Label1, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Label1, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Label1, 0);
@@ -42,13 +41,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_style_text_opa(ui_Label1, 255, (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_Label1, &lv_font_montserrat_36, (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Label2 = lv_label_create(ui_Screen1);
-    lv_obj_set_width(ui_Label2, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label2, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(ui_Label2, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label2, "text");
-
-    ui_timerLabelBackground = lv_label_create(ui_Screen1);
+    ui_timerLabelBackground = lv_label_create(ui_timerScreen);
     lv_obj_set_width(ui_timerLabelBackground, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_timerLabelBackground, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(ui_timerLabelBackground, LV_ALIGN_CENTER);
@@ -59,18 +52,19 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_style_text_font(ui_timerLabelBackground, &ui_font_sevenSegments96,
                                (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_timerLabel = lv_label_create(ui_Screen1);
+    ui_timerLabel = lv_label_create(ui_timerLabelBackground);
     lv_obj_set_width(ui_timerLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_timerLabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(ui_timerLabel, LV_ALIGN_CENTER);
+    lv_obj_set_align(ui_timerLabel, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_timerLabel, "00:00");
     lv_obj_set_style_text_color(ui_timerLabel, lv_color_hex(0x20A7F0),
                                 (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_timerLabel, 255, (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_timerLabel, LV_TEXT_ALIGN_RIGHT, (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_timerLabel, &ui_font_sevenSegments96,
                                (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_startStopButton = lv_button_create(ui_Screen1);
+    ui_startStopButton = lv_button_create(ui_timerScreen);
     lv_obj_set_width(ui_startStopButton, 189);
     lv_obj_set_height(ui_startStopButton, 69);
     lv_obj_set_x(ui_startStopButton, 0);
@@ -97,14 +91,13 @@ void ui_Screen1_screen_init(void)
 
 }
 
-void ui_Screen1_screen_destroy(void)
+void ui_timerScreen_screen_destroy(void)
 {
-    if(ui_Screen1) lv_obj_delete(ui_Screen1);
+    if(ui_timerScreen) lv_obj_delete(ui_timerScreen);
 
     // NULL screen variables
-    ui_Screen1 = NULL;
+    ui_timerScreen = NULL;
     ui_Label1 = NULL;
-    ui_Label2 = NULL;
     ui_timerLabelBackground = NULL;
     ui_timerLabel = NULL;
     ui_startStopButton = NULL;

@@ -30,12 +30,14 @@ void ui_init(void)
     lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
                                                false, LV_FONT_DEFAULT);
     lv_display_set_theme(dispp, theme);
-    ui_Screen1_screen_init();
+    ui_timerScreen_screen_init();
+    ui_stopwatchScreen_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
-    lv_screen_load(ui_Screen1);
+    lv_screen_load(ui_timerScreen);
 }
 
 void ui_destroy(void)
 {
-    ui_Screen1_screen_destroy();
+    ui_timerScreen_screen_destroy();
+    ui_stopwatchScreen_screen_destroy();
 }

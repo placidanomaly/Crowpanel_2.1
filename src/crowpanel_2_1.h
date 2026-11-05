@@ -56,6 +56,7 @@ SOFTWARE.
 #include <Arduino_GFX_Library.h>
 #include <lvgl.h>
 #include <atomic>
+#include <vector>
 #include "debughelper.h"
 
 // Hardware pin assignments. These are fixed on the Crowpanel.
@@ -554,6 +555,7 @@ class CrowController {
     protected:        
         Crowpanel *panel = NULL;
         CrowController();
+        ~CrowController();
         
     private:
         bool active = false;
@@ -561,6 +563,8 @@ class CrowController {
         unsigned long deepSleepTimeout = 0; // Deep sleep timeout (0 = never)
         unsigned long timeoutLightSleep = 0;
         unsigned long lastActiveMillis;
+
+        static inline std::vector<CrowController *> allControllers;
 };
 
 #endif // CROWPANEL_2_1_H

@@ -53,7 +53,7 @@ void TimerController::setDisplayValue(TimerValue &value) {
     lv_async_call([](void *data){
         TimerValue value = *(TimerValue *)data;
         char buf[6] = {0, 0, 0, 0, 0, 0};
-        snprintf(buf, sizeof(buf), "%02d:%02d", value.minutes, value.seconds);
+        snprintf(buf, sizeof(buf), "%2d:%02d", value.minutes, value.seconds);
         lv_label_set_text(ui_timerLabel, buf);
     }, &valueHolder);
 }
@@ -85,6 +85,7 @@ void TimerController::startTimer() {
     setState(RUNNING);
     debug << "[TIMER] Starting timer" << endl;
     currentTimerValue = getInitialTimerValue(); // Reset to initial value each time we start
+
     // Start a periodic timer to tick every second
     timer = lv_timer_create([](lv_timer_t *timer){
         TimerController *controller = static_cast<TimerController *>(lv_timer_get_user_data(timer));
@@ -92,8 +93,6 @@ void TimerController::startTimer() {
         controller->tick();
         controller->resetSleepTimeout(); // Prevent from going to sleep while timer is running
     }, 1000, this);
-
-    
 }
 
 void TimerController::stopTimer() {
@@ -111,11 +110,7 @@ void TimerController::stopTimer() {
 }
 
 void TimerController::tick() {
-    if(currentTimerValue.minutes == 0 && currentTimerValue.seconds == 0) {
-        // Timer has finished
-        stopTimer();                        
-        return;
-    }
+    debug << "[TIMER] Tick: ";
 
     if(currentTimerValue.seconds == 0) {
         if(currentTimerValue.minutes > 0) {
@@ -125,8 +120,14 @@ void TimerController::tick() {
     } else {
         currentTimerValue.seconds--;
     }
-
+    debug << " " << currentTimerValue.minutes << " minutes " << currentTimerValue.seconds << " seconds." << endl;    
     setDisplayValue(currentTimerValue);
+
+    if((currentTimerValue.minutes == 0) && (currentTimerValue.seconds == 0)) {
+        // Timer has finished
+        stopTimer();                        
+        return;
+    }
 }
 
 void TimerController::setState(TimerState newState) {
@@ -197,7 +198,7 @@ void TimerController::encoderRotation(int delta) {
     setDisplayValue(timerSetting);
 }
 
-void TimerController::saveStateBeforeDeepSleep() {
+void TimerController::saveStateBeforeDeepSleep() {    
     sleepTimerValue = timerSetting;
 }
 

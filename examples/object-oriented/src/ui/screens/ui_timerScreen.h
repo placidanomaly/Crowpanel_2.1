@@ -3,19 +3,18 @@
 // LVGL version: 9.6
 // Project name: object-oriented
 
-#ifndef UI_SCREEN1_H
-#define UI_SCREEN1_H
+#ifndef UI_TIMERSCREEN_H
+#define UI_TIMERSCREEN_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// SCREEN: ui_Screen1
-extern void ui_Screen1_screen_init(void);
-extern void ui_Screen1_screen_destroy(void);
-extern lv_obj_t * ui_Screen1;
+// SCREEN: ui_timerScreen
+extern void ui_timerScreen_screen_init(void);
+extern void ui_timerScreen_screen_destroy(void);
+extern lv_obj_t * ui_timerScreen;
 extern lv_obj_t * ui_Label1;
-extern lv_obj_t * ui_Label2;
 extern lv_obj_t * ui_timerLabelBackground;
 extern lv_obj_t * ui_timerLabel;
 extern void ui_event_startStopButton(lv_event_t * e);

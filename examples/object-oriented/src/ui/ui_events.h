@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 void startStopClicked(lv_event_t * e);
+void stopwatchClicked(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/
