@@ -79,6 +79,13 @@ void StopwatchController::loop() {
         time.minutes = int(elapsedMillis / 60000.0f);
         time.seconds = (elapsedMillis - time.minutes * 60000) / 1000.0f;
         time.hundredths = (elapsedMillis % 1000) / 10;        
-        updateDisplay();
+        
+        // Prevent our counter from exceeding the limit of our 2-digit display
+        if(time.minutes > 99) {
+            time.hundredths = 99;
+            stop();            
+        } else {
+            updateDisplay();
+        }
     }
 }
