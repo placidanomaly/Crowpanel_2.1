@@ -31,8 +31,8 @@ class StopwatchController: public CrowController {
         void updateDisplay();        
         
         TimerValue time;
-        StopwatchState state = STOPPED;
-        unsigned long startTimeMillis;
+        StopwatchState state = STOPPED;        
+        unsigned long startTimeMillis = 0;
     };
 
 #endif
