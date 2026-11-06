@@ -7,11 +7,10 @@
 #define PREFS_TIMER_SEC_KEY     "seconds"
 
 // Link SquareLine-generated callbacks to our CrowController timer object
-extern "C" void startStopClicked(lv_event_t *e) { TimerController::getInstance().click(); }
+extern "C" void startStopClicked(lv_event_t *e) { TimerController::getInstance().onClick(); }
 
 // RTC variable for saving current timer value across deep sleep cycles
 RTC_DATA_ATTR TimerController::TimerValue sleepTimerValue = {0, 0};
-
 
 TimerController& TimerController::getInstance() {
     static TimerController *instance = NULL;
@@ -37,29 +36,42 @@ void TimerController::begin(Crowpanel &panel) {
     prefs.end();
     debug << "[TIMER] timerSetting retrieved or initialized (" << timerSetting.minutes << ":" << timerSetting.seconds << ")" << endl;
 
-    // Set the display to show the current timer value
-    setDisplayValue(getInitialTimerValue());
+    updateDisplay();
 }
 
 TimerController::TimerValue &TimerController::getInitialTimerValue() {
     return timerSetting;
 }
 
-void TimerController::setDisplayValue(TimerValue &value) {
-    static TimerValue valueHolder;
+void TimerController::activate() {
+    CrowController::activate();
 
-    valueHolder = value;
+    updateDisplay();
+}
+
+void TimerController::updateDisplay() {
+
+    // If the controller is not activated, the program is displaying
+    // another screen, so no need to update the value
+    if(!isActivated()) return;
+
+    static TimerValue *value;
+    switch(state) {
+        case STOPPED: value = &timerSetting; break;
+        case RUNNING: value = &currentTimerValue; break;
+        case FINISHED: value = &currentTimerValue; break;
+    }
     
     lv_async_call([](void *data){
         TimerValue value = *(TimerValue *)data;
         char buf[6] = {0, 0, 0, 0, 0, 0};
         snprintf(buf, sizeof(buf), "%2d:%02d", value.minutes, value.seconds);
         lv_label_set_text(ui_timerLabel, buf);
-    }, &valueHolder);
+    }, value);
 }
 
-void TimerController::click() {
-    CrowController::click();
+void TimerController::onClick() {
+    CrowController::onClick();
 
     debug << "[TIMER] Click: ";
     switch(state) {
@@ -73,7 +85,7 @@ void TimerController::click() {
             break;
         case FINISHED:            
             debug << "resetting timer" << endl;
-            setDisplayValue(timerSetting);
+            updateDisplay();
             setState(STOPPED);
             break;
     }
@@ -121,7 +133,7 @@ void TimerController::tick() {
         currentTimerValue.seconds--;
     }
     debug << " " << currentTimerValue.minutes << " minutes " << currentTimerValue.seconds << " seconds." << endl;    
-    setDisplayValue(currentTimerValue);
+    updateDisplay();
 
     if((currentTimerValue.minutes == 0) && (currentTimerValue.seconds == 0)) {
         // Timer has finished
@@ -136,7 +148,7 @@ void TimerController::setState(TimerState newState) {
     switch(state) {
         case STOPPED:
             lv_label_set_text(ui_buttonLabel, "START");
-            setDisplayValue(timerSetting);
+            updateDisplay();
             break;
         case RUNNING:
             lv_label_set_text(ui_buttonLabel, "STOP");
@@ -156,8 +168,8 @@ void TimerController::setState(TimerState newState) {
     }
 }
 
-void TimerController::encoderRotation(int delta) {
-    CrowController::encoderRotation(delta);
+void TimerController::onEncoderRotation(int delta) {
+    CrowController::onEncoderRotation(delta);
 
     if(state == RUNNING) return; // Don't allow changes while running
     if(state == FINISHED) {
@@ -195,7 +207,7 @@ void TimerController::encoderRotation(int delta) {
             break;
     }    
     debug << "[TIMER] New timer initial value: " << timerSetting.minutes << ":" << timerSetting.seconds << endl;
-    setDisplayValue(timerSetting);
+    updateDisplay();
 }
 
 void TimerController::saveStateBeforeDeepSleep() {    

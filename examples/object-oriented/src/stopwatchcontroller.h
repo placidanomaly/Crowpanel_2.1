@@ -13,7 +13,7 @@ class StopwatchController: public CrowController {
         void stop();
         void reset();
 
-        struct TimerValue {
+        struct StopwatchValue {
             int minutes;
             int seconds;
             int hundredths;
@@ -23,15 +23,15 @@ class StopwatchController: public CrowController {
         StopwatchState getStopwatchState();
 
         // Override CrowController methods to handle user input events
-        virtual void click() override;        
+        virtual void onClick() override;        
         virtual void loop() override;
 
     private:
         StopwatchController();        
         void updateDisplay();        
         
-        TimerValue time;
-        StopwatchState state = STOPPED;        
+        StopwatchValue time;
+        StopwatchState state = READY;        
         unsigned long startTimeMillis = 0;
     };
 

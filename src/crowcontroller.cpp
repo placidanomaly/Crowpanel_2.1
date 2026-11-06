@@ -30,25 +30,25 @@ void CrowController::activate() {
     panel->registerClickActionCallback([](void *context) {
         CrowController *cc = static_cast<CrowController *>(context);
         cc->resetSleepTimeout();
-        cc->click();
+        cc->onClick();
     }, this);
 
     panel->registerDoubleClickActionCallback([](void *context) {
         CrowController *cc = static_cast<CrowController *>(context);
         cc->resetSleepTimeout();
-        cc->doubleClick();
+        cc->onDoubleClick();
     }, this);
 
     panel->registerLongPressActionCallback([](void *context) {
         CrowController *cc = static_cast<CrowController *>(context);
         cc->resetSleepTimeout();
-        cc->longPress();
+        cc->onLongPress();
     }, this);
 
     panel->registerEncoderRotationActionCallback([](int rotation, void *context) {
         CrowController *cc = static_cast<CrowController *>(context);
         cc->resetSleepTimeout();
-        cc->encoderRotation(rotation);
+        cc->onEncoderRotation(rotation);
     }, this, true);
 
     resetSleepTimeout();
@@ -103,6 +103,8 @@ void CrowController::setDeepSleepTimeout(unsigned long sleepSeconds) {
 }
 
 void CrowController::loop() {
+    if(!isActivated()) return;
+    
     panel->loop();
 
     if(sleepTimeout > 0)

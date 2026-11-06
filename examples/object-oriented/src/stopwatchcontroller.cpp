@@ -2,7 +2,7 @@
 #include "ui/ui.h"
 
 // Link SquareLine-generated callbacks to our CrowController timer object
-extern "C" void stopwatchClicked(lv_event_t *e) { StopwatchController::getInstance().click(); }
+extern "C" void stopwatchClicked(lv_event_t *e) { StopwatchController::getInstance().onClick(); }
 
 StopwatchController& StopwatchController::getInstance() {
     static StopwatchController *instance = NULL;
@@ -20,6 +20,7 @@ void StopwatchController::begin(Crowpanel &panel) {
 void StopwatchController::start() {
     if(state != READY) return;
 
+    debug << "[STOPWATCH] Starting stopwatch" << endl;
     lv_label_set_text(ui_stopwatchButtonLabel, "STOP");
     state = RUNNING;
     startTimeMillis = millis();
@@ -28,6 +29,7 @@ void StopwatchController::start() {
 void StopwatchController::stop() {
     if(state != RUNNING) return;
 
+    debug << "[STOPWATCH] Stopping stopwatch" << endl;
     lv_label_set_text(ui_stopwatchButtonLabel, "RESET");
     state = STOPPED;
 }
@@ -38,6 +40,7 @@ void StopwatchController::reset() {
     time = {0, 0, 0};
     updateDisplay();
 
+    debug << "[STOPWATCH] Resetting stopwatch" << endl;
     lv_label_set_text(ui_stopwatchButtonLabel, "START");
     state = READY;
 }
@@ -46,7 +49,9 @@ StopwatchController::StopwatchState StopwatchController::getStopwatchState() {
     return state;
 }
 
-void StopwatchController::click() {
+void StopwatchController::onClick() {
+    CrowController::onClick();
+    
     switch(state) {
         case READY: start(); break;
         case RUNNING: stop(); break;
@@ -76,16 +81,16 @@ void StopwatchController::loop() {
         if(elapsedMillis / 10 == previousElapsed / 10) return; // No need to update the display if there's less than 1/100 second since last update
         previousElapsed = elapsedMillis;
 
-        time.minutes = int(elapsedMillis / 60000.0f);
+        time.minutes = elapsedMillis / 60000.0f;
         time.seconds = (elapsedMillis - time.minutes * 60000) / 1000.0f;
         time.hundredths = (elapsedMillis % 1000) / 10;        
         
         // Prevent our counter from exceeding the limit of our 2-digit display
         if(time.minutes > 99) {
-            time.hundredths = 99;
             stop();            
-        } else {
-            updateDisplay();
+            time.hundredths = 99;
         }
+
+        updateDisplay();
     }
 }

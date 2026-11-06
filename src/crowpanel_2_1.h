@@ -487,10 +487,10 @@ class CrowController {
          *  Override these functions to implement custom behavior
          *  in your derived class.
          */
-        virtual void click() {};
-        virtual void doubleClick() {};
-        virtual void longPress() {};
-        virtual void encoderRotation(int delta) {};
+        virtual void onClick() {};
+        virtual void onDoubleClick() {};
+        virtual void onLongPress() {};
+        virtual void onEncoderRotation(int delta) {};
 
         /** @brief Main loop function for the controller
          *  Override this function to implement custom behavior

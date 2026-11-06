@@ -82,7 +82,7 @@ void ui_stopwatchScreen_screen_init(void)
     lv_obj_set_width(ui_stopwatchLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_stopwatchLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(ui_stopwatchLabel, LV_ALIGN_RIGHT_MID);
-    lv_label_set_text(ui_stopwatchLabel, "00:00.");
+    lv_label_set_text(ui_stopwatchLabel, "0:00.");
     lv_obj_set_style_text_color(ui_stopwatchLabel, lv_color_hex(0x20A7F0),
                                 (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_stopwatchLabel, 255, (lv_style_selector_t)LV_PART_MAIN | LV_STATE_DEFAULT);

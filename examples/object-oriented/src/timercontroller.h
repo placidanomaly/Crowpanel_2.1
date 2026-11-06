@@ -23,16 +23,19 @@ class TimerController: public CrowController {
         TimerState getTimerState();
 
         // Override CrowController methods to handle user input events
-        virtual void click() override;
-        virtual void encoderRotation(int delta) override;
+        virtual void onClick() override;
+        virtual void onEncoderRotation(int delta) override;
 
         // Functions to handle saving and restoring state across deep sleep cycles
         virtual void saveStateBeforeDeepSleep() override;
         virtual void restoreStateAfterDeepSleep() override;
 
+        // Cause display to be refreshed when activated
+        virtual void activate();
+
     private:
         TimerController();        
-        void setDisplayValue(TimerValue &value);
+        void updateDisplay();
         void tick();
         
         TimerValue timerSetting = {0, 0};

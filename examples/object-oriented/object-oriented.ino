@@ -1,3 +1,4 @@
+
 // A minimal program that uses the Crowpanel_2.1 library
 
 #include <crowpanel_2_1.h>
@@ -16,8 +17,12 @@ CrowController *activeController = NULL;
 
 void setup() {
 
+  // Set the USB TX timeout to 0 so it doesn't block waiting when unplugged
+  Serial.setTxTimeoutMs(0);
   Serial.begin(115200);
-  debug.begin(true); // Enable output of debug messages to Serial
+
+  // Enable output of debug messages to Serial (set to false for prod)
+  debug.begin(true);
   
   debug << "[BOOT] Initializing" << endl;
 
