@@ -35,11 +35,11 @@ void setup() {
   // Initialize our controllers
   stopwatch.begin(panel);
   timer.begin(panel);
+  
+  // Cause device to enter deep sleep if inactive for 2 minutes
+  // while in countdown timer mode (will not go to sleep in stopwatch
+  // mode unless the same command is issued against that controller)
   timer.setDeepSleepTimeout(120);
-
-  // If we woke up from deep sleep, restore the controller state
-  // that was set at the time we went to sleep
-  if(panel.wokeUpFromDeepSleep()) timer.restoreStateAfterDeepSleep();
   
   // Activate the timer controller
   setActiveController(timer);
@@ -72,6 +72,9 @@ void longPressHandler() {
 }
 
 void loop() {
+  // Note that there is no need to call panel.loop() because
+  // the activeController object will do it in its own loop()
+  // function
   activeController->loop();
 
   // Let MCU breath a bit

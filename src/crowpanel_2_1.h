@@ -446,11 +446,13 @@ class CrowController {
          */
         virtual void begin(Crowpanel &panel);
  
-        /** @brief Call this method to activate this controller object and
+        /** @brief Call this method to give control to your controller object and
          * cause it to handle user inputs. You can implement 
          * this method in your derived class to perform any additional logic
          * when the controller is activated, such as updating the display or resetting
-         * internal state.
+         * internal state. A controller that has not been activated will
+         * not receive any encoder or touchscreen events, will not monitor any set
+         * sleep timeouts, and should probably not have its sleep function called.
          * NOTE: This member function MUST be called in order to enable
          * events to this object.
          * 
@@ -483,13 +485,21 @@ class CrowController {
          */
         bool isActivated();
 
-        /** @brief Handle click/double-click/long press/encoder rotation events.
-         *  Override these functions to implement custom behavior
-         *  in your derived class.
+        /** @brief These 3 functions handle click, double-click, and long 
+         *  press encoder events. Override these functions to implement
+         *  custom behavior in your derived class.
          */
         virtual void onClick() {};
         virtual void onDoubleClick() {};
         virtual void onLongPress() {};
+
+        /** @brief Receives encoder rotation events.
+         *  @param [in] delta Contains the direction and speed of rotation.
+         *  a negative value indicates counter-clockwise rotation while a
+         *  positive value indicates clockwise rotation. A value of 1/-1 indicates
+         *  a slow rotation while 2 (or -2) indicates a fast rotation.
+         */
+
         virtual void onEncoderRotation(int delta) {};
 
         /** @brief Main loop function for the controller
@@ -498,10 +508,14 @@ class CrowController {
          *  calls the loop() function of your derived class in its 
          *  own loop() function. 
          * 
-         *  If you do override this function,
+         *  NOTE: If you do override this function,
          *  make sure to call the base class CrowController::loop()
          *  function in your override to ensure that the encoder and 
          *  touchscreen events are processed correctly.
+         * 
+         *  NOTE: The loop function in this base class will call
+         *  Crowpanel::loop() if the controller is activated, so there
+         *  is no need to call panel.loop() in your main program.
          */
         virtual void loop();
 
@@ -509,20 +523,25 @@ class CrowController {
          * called whenever a user input is received. You can also call it in
          * your derived class to prevent the controller from going to sleep if 
          * you have a long-running operation that does not involve user input.
+         * 
+         * NOTE: If you override this function, make sure to call the parent
+         * CrowController::loop(); at the beginning of your own loop() function
+         * so that sleep timeouts and other things will be monitored.
          */
         void resetSleepTimeout();
 
         /** @brief Save the state of the controller before entering deep sleep.
          *  Override this function in your derived class to save any state 
          *  that needs to be restored after waking up from deep sleep. This 
-         * function is automatically called before entering deep sleep.
+         *  function is automatically called before entering deep sleep.
+         *  This function is called even if the controller is not activated.
          */
         virtual void saveStateBeforeDeepSleep() {};
 
         /** @brief Restore the state of the controller after exiting deep sleep.
          *  Override this function in your derived class to restore any state 
          *  that was saved before entering deep sleep. This function is automatically
-         *  called during reboot after exiting deep sleep.
+         *  called in the begin() function if the panel is resuming from deep sleep.
          */
         virtual void restoreStateAfterDeepSleep() {};
 
@@ -531,13 +550,15 @@ class CrowController {
          * in your derived class to put the controller into deep sleep mode for some
          * other reason. See ESP32 documentation about sleep modes.
          * The controller will wake up upon a rotation of the encoder.
+         * 
+         * The function will call saveStateBeforeDeepSleep() on all instantiated
+         * controllers before going to sleep.
          */
         void goToDeepSleep();
 
         /** @brief Put the controller into light sleep mode. This function is automatically
          * called when the Sleep timeout has elapsed. See ESP32 documentation about sleep modes.
-         * The controller will wake up upon a rotation of the encoder or a touch
-         * on the touchscreen.
+         * The controller will wake up upon a rotation of the encoder.
          */
         void goToLightSleep();
 
@@ -546,9 +567,12 @@ class CrowController {
          * If set to 0, the controller will never go to light sleep.
          */
         void setSleepTimeout(unsigned long sleepSeconds);
+
         /** @brief Sets the Deep Sleep timeout
          * @param [in] sleepSeconds The number of seconds of inactivity before going to deep sleep.
          * If set to 0, the controller will never go to deep sleep.
+         * NOTE: If you set both Deep and Light Sleep timeouts, only the one with the shortest
+         * timeout will be activated.
          */
         void setDeepSleepTimeout(unsigned long sleepSeconds);
 
