@@ -62,7 +62,6 @@ SOFTWARE.
 // Hardware pin assignments. These are fixed on the Crowpanel.
 #define I2C_SDA_PIN 38
 #define I2C_SCL_PIN 39
-#define ONBOARD_LED_PIN 1
 #define SCREEN_BACKLIGHT_PIN 6
 #define ENCODER_A_PIN 42
 #define ENCODER_B_PIN 4
@@ -164,13 +163,6 @@ public:
      * empty, the intensity will be set to 255.
      */
     void setBacklight(uint8_t intensity = 255);
-
-    /**
-     * @brief Sets the intensity of the LED underneath the rotary control
-     * @param [in] intensity An optional 0-255 value of intensity for the
-     * rotary control LED. Leaving this empty sets the intensity to 255.
-     */
-    void setOnboardLEDIntensity(uint8_t intensity = 255);
 
     enum DisplayRotation : int8_t { NO_ROTATION = 0, ROTATION_90_CW, ROTATION_180, ROTATION_90_CCW };
     /**
