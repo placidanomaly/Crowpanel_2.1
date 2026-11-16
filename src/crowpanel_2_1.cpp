@@ -81,9 +81,8 @@ void Crowpanel::begin() {
     pcf8574.pinMode(P4, OUTPUT);        //lcd reset
     pcf8574.pinMode(P5, INPUT_PULLUP);  //encoder SW
 
-    // Set PWM mode for backlight and onboard LED lights
-    ledcAttachChannel(SCREEN_BACKLIGHT_PIN, pwmFreq, pwmResolution, 0);
-    ledcAttachChannel(ONBOARD_LED_PIN, pwmFreq, pwmResolution, 1);
+    // Set PWM mode for backlight
+    ledcAttach(SCREEN_BACKLIGHT_PIN, pwmFreq, pwmResolution);    
 
     debug << "[PANEL] Init pcf8574... ";
     if (pcf8574.begin()) {
@@ -144,8 +143,7 @@ void Crowpanel::begin() {
 
     delay(200);
     setLCDPower(ON);
-    setBacklight();
-    setOnboardLEDIntensity();
+    setBacklight();    
 
     encoderActionQueue = xQueueCreate(16, sizeof(EncoderAction));
     if (!encoderActionQueue) {
@@ -154,7 +152,7 @@ void Crowpanel::begin() {
     xTaskCreatePinnedToCore(encTaskSafe, "ENC", 2048, this, 1, NULL, 0);
 
     // Enable touchscreen
-    lv_indev_t *touch_indev = lv_indev_create();
+    touch_indev = lv_indev_create();
     lv_indev_set_type(touch_indev, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(touch_indev, my_touchpad_read);
     lv_indev_set_display(touch_indev, display);
@@ -284,10 +282,6 @@ void Crowpanel::my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
 
 void Crowpanel::setBacklight(uint8_t intensity) {  
   ledcWrite(SCREEN_BACKLIGHT_PIN, intensity);
-}
-
-void Crowpanel::setOnboardLEDIntensity(uint8_t intensity) {
-  ledcWrite(ONBOARD_LED_PIN, intensity);
 }
 
 void Crowpanel::setLongPressDelayMS(uint32_t longPressDelay) {
@@ -618,4 +612,8 @@ void Crowpanel::goToLightSleep() {
 
     setLCDPower(ON);
     setBacklight(255);
+}
+
+lv_indev_t *Crowpanel::getLVIndev() {
+  return touch_indev;
 }

@@ -62,7 +62,6 @@ SOFTWARE.
 // Hardware pin assignments. These are fixed on the Crowpanel.
 #define I2C_SDA_PIN 38
 #define I2C_SCL_PIN 39
-#define ONBOARD_LED_PIN 1
 #define SCREEN_BACKLIGHT_PIN 6
 #define ENCODER_A_PIN 42
 #define ENCODER_B_PIN 4
@@ -164,13 +163,6 @@ public:
      * empty, the intensity will be set to 255.
      */
     void setBacklight(uint8_t intensity = 255);
-
-    /**
-     * @brief Sets the intensity of the LED underneath the rotary control
-     * @param [in] intensity An optional 0-255 value of intensity for the
-     * rotary control LED. Leaving this empty sets the intensity to 255.
-     */
-    void setOnboardLEDIntensity(uint8_t intensity = 255);
 
     enum DisplayRotation : int8_t { NO_ROTATION = 0, ROTATION_90_CW, ROTATION_180, ROTATION_90_CCW };
     /**
@@ -317,6 +309,12 @@ public:
      */
     Arduino_RGB_Display *getDisplayGfx();
 
+    /**
+     * @brief Returns a pointer to the LVGL input device object of our touchscreen
+     * @return A pointer to lv_indev_t
+     */
+    lv_indev_t *getLVIndev();
+
     void goToDeepSleep();
     bool wokeUpFromDeepSleep();
     void goToLightSleep();
@@ -343,7 +341,7 @@ private:
     unsigned long doubleClickTime = 300;  
     unsigned long longPressTime = 1000;
 
-    // Shared PWM settings for the screen backlight and the onboard indicator LED.
+    // PWM settings for the screen backlight 
     const int pwmFreq = 5000;
     const int pwmResolution = 8;
 
@@ -358,6 +356,7 @@ private:
     Adafruit_CST8XX *tsPanel;
     static void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data);
     static void touch_hardware_task(void *pvParameters);
+    lv_indev_t *touch_indev;
 
     // Full-size LVGL draw buffers allocated in external PSRAM during setup().
     uint8_t *buf1 = NULL;
