@@ -532,15 +532,17 @@ class CrowController {
         /** @brief Save the state of the controller before entering deep sleep.
          *  Override this function in your derived class to save any state 
          *  that needs to be restored after waking up from deep sleep. This 
-         *  function is automatically called before entering deep sleep.
-         *  This function is called even if the controller is not activated.
+         *  function is automatically called before entering deep sleep, whether
+         *  or not the controller object is activated.
          */
         virtual void saveStateBeforeDeepSleep() {};
 
         /** @brief Restore the state of the controller after exiting deep sleep.
          *  Override this function in your derived class to restore any state 
          *  that was saved before entering deep sleep. This function is automatically
-         *  called in the begin() function if the panel is resuming from deep sleep.
+         *  called in the CrowController::begin() function if the panel is resuming 
+         *  from deep sleep. Make sure you call CrowController::begin() at some point
+         *  in the begin() function of your derived class if you do implement one.
          */
         virtual void restoreStateAfterDeepSleep() {};
 
